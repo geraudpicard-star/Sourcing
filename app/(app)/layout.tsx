@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 import Sidebar from "@/components/Sidebar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -13,9 +15,13 @@ export default async function AppLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (!user) {
+    redirect("/login");
+  }
+
   return (
     <div className="flex min-h-screen">
-      <Sidebar email={user?.email ?? null} />
+      <Sidebar email={user.email ?? null} />
       <div className="flex-1 min-w-0 flex flex-col">{children}</div>
     </div>
   );
