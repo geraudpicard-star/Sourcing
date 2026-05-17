@@ -208,7 +208,13 @@ function AddressBlock({ company }: { company: Company }) {
   );
 }
 
-function DirigeantRow({ dirigeant }: { dirigeant: Dirigeant }) {
+function DirigeantRow({
+  dirigeant,
+  allowRecursion = true,
+}: {
+  dirigeant: Dirigeant;
+  allowRecursion?: boolean;
+}) {
   if (dirigeant.kind === "individu") {
     const fullname = [dirigeant.prenom, dirigeant.nom].filter(Boolean).join(" ");
     return (
@@ -222,6 +228,54 @@ function DirigeantRow({ dirigeant }: { dirigeant: Dirigeant }) {
       </div>
     );
   }
+  return <EntityDirigeantBlock dirigeant={dirigeant} allowRecursion={allowRecursion} />;
+}
+
+function EntityDirigeantBlock({
+  dirigeant,
+  allowRecursion,
+}: {
+  dirigeant: Dirigeant;
+  allowRecursion: boolean;
+}) {
+  const frSiren =
+    dirigeant.siren && /^\d{9}$/.test(dirigeant.siren) ? dirigeant.siren : null;
+  const [nested, setNested] = useState<DirigeantsResponse | null>(null);
+  const [nestedLoading, setNestedLoading] = useState(false);
+  const [nestedError, setNestedError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!allowRecursion || !frSiren) return;
+    let cancelled = false;
+    setNestedLoading(true);
+    setNestedError(null);
+    fetch(`/api/companies/${frSiren}`)
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.detail ?? body.error ?? `Erreur ${res.status}`);
+        }
+        return res.json() as Promise<DirigeantsResponse>;
+      })
+      .then((d) => {
+        if (!cancelled) setNested(d);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled)
+          setNestedError(e instanceof Error ? e.message : "Erreur inconnue");
+      })
+      .finally(() => {
+        if (!cancelled) setNestedLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [allowRecursion, frSiren]);
+
+  // Show only INDIVIDU children — those are the real humans behind the entity.
+  const humans =
+    nested?.dirigeants.filter((d) => d.kind === "individu") ?? [];
+
   return (
     <div>
       <div className="font-medium">
@@ -229,9 +283,46 @@ function DirigeantRow({ dirigeant }: { dirigeant: Dirigeant }) {
       </div>
       <div className="text-xs text-slate-500 mt-0.5">
         {dirigeant.roleLabel ?? "Rôle inconnu"}
-        {dirigeant.siren ? ` · SIREN ${dirigeant.siren}` : ""}
-        {dirigeant.formeJuridique ? ` · forme jur. ${dirigeant.formeJuridique}` : ""}
+        {dirigeant.siren ? ` · SIREN ${dirigeant.siren}` : " · étranger"}
+        {dirigeant.formeJuridique
+          ? ` · forme jur. ${dirigeant.formeJuridique}`
+          : ""}
       </div>
+
+      {allowRecursion && frSiren ? (
+        <div className="mt-3 pl-3 border-l-2 border-brand-200 space-y-2">
+          {nestedLoading ? (
+            <div className="text-xs text-slate-400">
+              ↳ recherche des dirigeants de la holding…
+            </div>
+          ) : nestedError ? (
+            <div className="text-xs text-amber-600">
+              ↳ impossible de récupérer ({nestedError})
+            </div>
+          ) : humans.length === 0 ? (
+            <div className="text-xs text-slate-400">
+              ↳ aucun dirigeant individuel direct dans cette entité
+            </div>
+          ) : (
+            humans.map((h, i) => (
+              <div key={i} className="text-xs">
+                <span className="text-brand-700">↳ </span>
+                <span className="font-medium text-slate-800">
+                  {[h.prenom, h.nom].filter(Boolean).join(" ")}
+                </span>
+                <span className="text-slate-500">
+                  {h.roleLabel ? ` · ${h.roleLabel}` : ""}
+                  {h.dateNaissance ? ` · né(e) ${h.dateNaissance}` : ""}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      ) : !frSiren ? (
+        <div className="mt-2 text-xs text-slate-400">
+          ↳ entité étrangère — données non disponibles
+        </div>
+      ) : null}
     </div>
   );
 }
