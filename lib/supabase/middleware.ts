@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
-import type { Database } from "@/types/database";
+import type { Database } from "../../types/database";
 
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
