@@ -39,6 +39,10 @@ export interface Database {
           raw: Json | null;
           dirigeants: Json | null;
           dirigeants_fetched_at: string | null;
+          financials: Json | null;
+          financials_fetched_at: string | null;
+          no_public_accounts: boolean | null;
+          principal_dirigeant: Json | null;
         };
         Insert: {
           siren: string;
@@ -65,6 +69,10 @@ export interface Database {
           raw?: Json | null;
           dirigeants?: Json | null;
           dirigeants_fetched_at?: string | null;
+          financials?: Json | null;
+          financials_fetched_at?: string | null;
+          no_public_accounts?: boolean | null;
+          principal_dirigeant?: Json | null;
         };
         Update: Partial<Database["public"]["Tables"]["companies"]["Insert"]>;
         Relationships: [];

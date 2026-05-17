@@ -50,6 +50,50 @@ export interface CompanyDetail {
   dirigeantsFetchedAt: string | null;
 }
 
+export interface FinancialExercise {
+  year: number;
+  /** Date de clôture de l'exercice (YYYY-MM-DD) */
+  closingDate: string | null;
+  /** Date de dépôt au greffe */
+  depositDate: string | null;
+  /** Chiffre d'affaires (€) */
+  ca: number | null;
+  /** Résultat net (€) */
+  netResult: number | null;
+  /** Capitaux propres (€) */
+  equity: number | null;
+  /** EBITDA estimé (€) si dérivable du compte de résultat */
+  ebitda: number | null;
+  /** Effectif moyen déclaré sur l'exercice */
+  employees: number | null;
+  /** Durée de l'exercice en mois (généralement 12) */
+  durationMonths: number | null;
+}
+
+export interface Financials {
+  exercices: FinancialExercise[];
+  /** Raccourci vers le dernier exercice publié (pour tri/filtre rapide) */
+  lastExercise: FinancialExercise | null;
+  /** True si la société a opté pour la confidentialité des comptes */
+  noPublicAccounts: boolean;
+  fetchedAt: string;
+}
+
+/** Dirigeant principal "addressable" pour un courrier (Président, Gérant, etc.). */
+export interface PrincipalDirigeant {
+  /** Référence à l'entité qui détient le rôle (peut être 'soi-même' ou une holding) */
+  source: "self" | "holding";
+  holdingSiren: string | null;
+  holdingDenomination: string | null;
+  prenom: string | null;
+  nom: string | null;
+  roleCode: string | null;
+  roleLabel: string | null;
+  dateNaissance: string | null;
+  /** Âge estimé en années calculé au moment de la résolution */
+  ageYears: number | null;
+}
+
 export const SearchFiltersSchema = z.object({
   nafCode: z
     .string()
